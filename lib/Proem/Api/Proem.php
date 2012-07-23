@@ -33,6 +33,7 @@ use Proem\Service\Manager\Standard as ServiceManager,
     Proem\Signal\Manager\Standard as SignalManager,
     Proem\Filter\Manager\Standard as FilterManager,
     Proem\Service\Asset\Standard as Asset,
+    Proem\Bootstrap\Filter\Event\View,
     Proem\Bootstrap\Filter\Event\Dispatch,
     Proem\Bootstrap\Filter\Event\Response,
     Proem\Bootstrap\Filter\Event\Request,
@@ -103,7 +104,7 @@ class Proem
     public function __construct()
     {
         $this->events = new Asset;
-        $this->events->set('\Proem\Signal\Manager\Template', $this->events->single(function($asset) {
+        $this->events->set('Proem\Signal\Manager\Template', $this->events->single(function($asset) {
             return new SignalManager;
         }));
 
@@ -192,6 +193,7 @@ class Proem
             ->attachEvent(new Response, FilterManager::RESPONSE_EVENT_PRIORITY)
             ->attachEvent(new Request, FilterManager::REQUEST_EVENT_PRIORITY)
             ->attachEvent(new Route, FilterManager::ROUTE_EVENT_PRIORITY)
+            ->attachEvent(new View, FilterManager::VIEW_EVENT_PRIORITY)
             ->attachEvent(new Dispatch, FilterManager::DISPATCH_EVENT_PRIORITY)
             ->init();
     }

@@ -13,7 +13,8 @@
     }
   ],
   "require": {
-    "php": ">=5.4.0"
+    "php": ">=5.4.0",
+    "twig/twig": "1.*"
   },
   "require-dev": {
     "jaz303/phake": "dev-master"

@@ -31,39 +31,36 @@
 namespace Proem\Api\Bootstrap\Filter\Event;
 
 use Proem\Service\Manager\Template as Manager,
-    Proem\Bootstrap\Signal\Event\Bootstrap,
+    Proem\Bootstrap\Signal\Event\View as Event,
     Proem\Service\Asset\Standard as Asset,
-    Proem\IO\Response\Http\Standard as HTTPResponse,
-    Proem\Filter\Event\Generic as Event;
+    Proem\View\Provider\Twig\Asset as TwigAsset,
+    Proem\Api\Filter\Event\Generic as FilterEvent;
 
 /**
- * The default "Response" filter event.
+ * The default "View" filter event.
  */
-class Response extends Event
+class View extends FilterEvent
 {
     /**
-     * Called prior to inBound.
-     *
-     * A listener responding with an object implementing the
-     * Proem\Api\IO\Response\Template interface, will result in that
-     * object being placed within the main service manager under
-     * the index of *response*.
-     *
-     * @param Proem\Api\Service\Manager\Template $assets
-     * @triggers Proem\Api\Bootstrap\Signal\Event\Bootstrap proem.pre.in.response
      */
     public function preIn(Manager $assets)
     {
-        if ($assets->provides('events', '\Proem\Signal\Manager\Template')) {
+        if ($assets->provides('events', 'Proem\Signal\Manager\Template')) {
             $assets->get('events')->trigger([
-                'name'      => 'proem.pre.in.response',
+                'name'      => 'proem.pre.in.view',
                 'params'    => [],
                 'target'    => $this,
                 'method'    => __FUNCTION__,
-                'event'     => (new Bootstrap())->setServiceManager($assets),
-                'callback'  => function($responseAsset) use ($assets) {
-                    if ($responseAsset->provides('Proem\IO\Response\Template')) {
-                        $assets->set('response', $responseAsset);
+                'event'     => new Event,
+                'callback'  => function($response) use ($assets) {
+                    if ($response instanceof Event) {
+                        if ($response->getProvider() instanceof Asset && $response->getProvider()->provides('Proem\View\Template')) {
+                            $assets->set('view', $response->getProvider());
+                        } elseif ($response->getProvider() && $response->getPath()) {
+                            if (ucfirst(strtolower($response->getProvider())) == 'Twig') {
+                                $assets->set('view', (new TwigAsset)->setParam('path', $response->getPath()));
+                            }
+                        }
                     }
                 },
             ]);
@@ -73,41 +70,29 @@ class Response extends Event
     /**
      * Method to be called on the way into the filter.
      *
-     * If not already provided, this method will add a default
-     * Proem\Api\IO\Response\Template implementation to the main service
-     * manager under the index of *response*.
-     *
      * @param Proem\Api\Service\Manager\Template $assets
      */
     public function inBound(Manager $assets)
     {
-        if (!$assets->provides('Proem\IO\Response\Template')) {
-            $asset = new Asset;
-            $assets->set(
-                'response',
-                $asset->set('Proem\IO\Response\Template', $asset->single(function() {
-                    return new HTTPResponse;
-                }))
-            );
-        }
+
     }
 
     /**
      * Called after outBound.
      *
      * @param Proem\Api\Service\Manager\Template $assets
-     * @triggers Proem\Api\Bootstrap\Signal\Event\Bootstrap proem.post.in.response
+     * @triggers Proem\Api\Bootstrap\Signal\Event\Bootstrap proem.post.in.view
      */
     public function postIn(Manager $assets)
     {
-        if ($assets->provides('events', '\Proem\Signal\Manager\Template')) {
+        if ($assets->provides('events', 'Proem\Signal\Manager\Template')) {
             $assets->get('events')->trigger([
-                'name'      => 'proem.post.in.response',
+                'name'      => 'proem.post.in.view',
                 'params'    => [],
                 'target'    => $this,
                 'method'    => __FUNCTION__,
-                'event'     => (new Bootstrap())->setServiceManager($assets),
-                'callback'  => function($responseAsset) {},
+                'event'     => new Event,
+                'callback'  => function($response) {},
             ]);
         }
     }
@@ -116,18 +101,18 @@ class Response extends Event
      * Called prior to outBound.
      *
      * @param Proem\Api\Service\Manager\Template $assets
-     * @triggers Proem\Api\Bootstrap\Signal\Event\Bootstrap proem.pre.out.response
+     * @triggers Proem\Api\Bootstrap\Signal\Event\Bootstrap proem.pre.out.view
      */
     public function preOut(Manager $assets)
     {
-        if ($assets->provides('events', '\Proem\Signal\Manager\Template')) {
+        if ($assets->provides('events', 'Proem\Signal\Manager\Template')) {
             $assets->get('events')->trigger([
-                'name'      => 'proem.pre.out.response',
+                'name'      => 'proem.pre.out.view',
                 'params'    => [],
                 'target'    => $this,
                 'method'    => __FUNCTION__,
-                'event'     => (new Bootstrap())->setServiceManager($assets),
-                'callback'  => function($responseAsset) {},
+                'event'     => new Event,
+                'callback'  => function($response) {},
             ]);
         }
     }
@@ -135,42 +120,29 @@ class Response extends Event
     /**
      * Method to be called on the way out of the filter.
      *
-     * This method is responseible for sending the response
-     * to the client.
-     *
-     * @see Proem\Api\IO\Response\Template
      * @param Proem\Api\Service\Manager\Template $assets
-     * @triggers Proem\Api\Bootstrap\Signal\Event\Bootstrap proem.pre.in.response
      */
     public function outBound(Manager $assets)
     {
-        if ($assets->provides('Proem\IO\Response\Template')) {
-            $response = $assets->get('response');
 
-            if ($assets->provides('Proem\View\Template')) {
-                $response->appendToBody($assets->get('view')->getContent());
-            }
-
-            $response->send();
-        }
     }
 
     /**
      * Called after outBound.
      *
      * @param Proem\Api\Service\Manager\Template $assets
-     * @triggers Proem\Api\Bootstrap\Signal\Event\Bootstrap proem.post.out.response
+     * @triggers Proem\Api\Bootstrap\Signal\Event\Bootstrap proem.post.out.view
      */
     public function postOut(Manager $assets)
     {
-        if ($assets->provides('events', '\Proem\Signal\Manager\Template')) {
+        if ($assets->provides('events', 'Proem\Signal\Manager\Template')) {
             $assets->get('events')->trigger([
-                'name'      => 'proem.post.out.response',
+                'name'      => 'proem.post.out.view',
                 'params'    => [],
                 'target'    => $this,
                 'method'    => __FUNCTION__,
-                'event'     => (new Bootstrap())->setServiceManager($assets),
-                'callback'  => function($responseAsset) {},
+                'event'     => new Event,
+                'callback'  => function($response) {},
             ]);
         }
     }
