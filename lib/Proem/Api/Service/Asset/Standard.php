@@ -193,8 +193,9 @@ class Standard implements Template
      */
     public function get(Manager $assetManager = null)
     {
-        $asset = $this->asset;
-        return $this->validate($asset($this, $assetManager));
+        if ($asset = $this->asset) {
+            return $this->validate($asset($this, $assetManager));
+        }
     }
 
     /**

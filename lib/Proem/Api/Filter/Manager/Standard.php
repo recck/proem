@@ -43,9 +43,10 @@ class Standard implements Template
     /**
      * Constants used for priorities
      */
-    const RESPONSE_EVENT_PRIORITY    = 300;
-    const REQUEST_EVENT_PRIORITY     = 200;
-    const ROUTE_EVENT_PRIORITY       = 100;
+    const RESPONSE_EVENT_PRIORITY    = 400;
+    const REQUEST_EVENT_PRIORITY     = 300;
+    const ROUTE_EVENT_PRIORITY       = 200;
+    const VIEW_EVENT_PRIORITY        = 100;
     const DISPATCH_EVENT_PRIORITY    = 0;
 
     /**
