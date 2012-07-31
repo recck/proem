@@ -57,6 +57,7 @@ class View extends StandardEvent
      * @param Proem\View\Template|string $provider
      * @return Proem\Api\Bootstrap\Signal\Event\View
      */
+
     public function setProvider($provider)
     {
         $this->provider = $provider;

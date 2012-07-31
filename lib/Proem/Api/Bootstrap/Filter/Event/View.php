@@ -44,12 +44,12 @@ class View extends FilterEvent
     /**
      * WIP:
      *
-     * Currently this method triggers a prowm.pre.in.view event then checks to see
+     * Currently this method triggers a proem.pre.in.view event then checks to see
      * if the response is a Proem\View\Template implementation.
      *
      * If so, it will load that implementation as the View.
      *
-     * If not, it goes ahead and creates a View based on Twig.
+     * If not, it goes ahead and creates a View based on Twig (the current default View).
      *
      * Eventually, I would like to make the creation of a default View implementation
      * take place within the inBound() method. This would also likely just be a simple
