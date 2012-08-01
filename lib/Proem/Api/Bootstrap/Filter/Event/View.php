@@ -49,15 +49,21 @@ class View extends FilterEvent
      *
      * If so, it will load that implementation as the View.
      *
-     * If not, it goes ahead and creates a View based on Twig (the current default View).
+     * If not, a default Twig View will eventually be loaded via the inBound event.
      *
-     * Eventually, I would like to make the creation of a default View implementation
-     * take place within the inBound() method. This would also likely just be a simple
-     * PHP rendering template engine instead of something like Twig.
+     * Eventually I would like to see the default Twig View replaced by a simple PHP
+     * rendering template engine.
      *
-     * I would then like to move all of this Twig stuff into a third party repo and make
+     * I would also like to move all of this Twig stuff into a third party repo and make
      * it a plugin. For the moment though, it's staying here.
      *
+     * ->attachEventListener([
+     *     'name' => 'proem.pre.in.view',
+     *     'callback' => function($event) {
+     *         return $event->setProvider('SomeTemplateEngine')
+     *             ->setPath('../templates');
+     *     }
+     * ]);
      */
     public function preIn(Manager $assets)
     {
@@ -72,22 +78,6 @@ class View extends FilterEvent
                     if ($response instanceof Event) {
                         if ($response->getProvider() instanceof Asset && $response->getProvider()->provides('Proem\View\Template')) {
                             $assets->set('view', $response->getProvider());
-                        } elseif ($response->getProvider() && $response->getPath()) {
-                            if (ucfirst(strtolower($response->getProvider())) == 'Twig') {
-
-                                $asset = new Asset;
-                                $asset->set('Proem\View\Template', $asset->single(function() use ($response) {
-
-                                    require_once realpath(__DIR__) . '/../../../../../../vendor/twig/twig/lib/Twig/Autoloader.php';
-                                    \Twig_Autoloader::register();
-                                    return (new TwigView)->setProvider(
-                                        new \Twig_Environment(new \Twig_Loader_Filesystem($response->getPath()))
-                                    );
-
-                                }));
-
-                                $assets->set('view', $asset);
-                            }
                         }
                     }
                 },
@@ -98,11 +88,59 @@ class View extends FilterEvent
     /**
      * Method to be called on the way into the filter.
      *
+     * If no other Proem\View\Template has been configured at this stage, this
+     * method sets up a default Twig View. Eventually I would like this replaced
+     * by a PHP rendering View provider.
+     *
+     * This default still requires some interaction from the user, namely
+     * they must tell Twig where there templates are stored.
+     *
+     *
+     * ->attachEventListener([
+     *     'name' => 'proem.in.view',
+     *     'callback' => function($event) {
+     *         return $event->setPath('../templates');
+     *     }
+     * ]);
+     *
      * @param Proem\Api\Service\Manager\Template $assets
      */
     public function inBound(Manager $assets)
     {
+        if (!$assets->provides('Proem\View\Template')) {
 
+            /**
+             * Load Twig as a default View provider.
+             */
+            $event = (new Event)->setProvider('Twig');
+
+            $assets->get('events')->trigger([
+                'name'      => 'proem.in.view',
+                'params'    => [],
+                'target'    => $this,
+                'method'    => __FUNCTION__,
+                'event'     => $event,
+                'callback'  => function($response) use ($assets) {
+                    if ($response->getPath()) {
+                        if (ucfirst(strtolower($response->getProvider())) == 'Twig') {
+
+                            $asset = new Asset;
+                            $asset->set('Proem\View\Template', $asset->single(function() use ($response) {
+
+                                require_once realpath(__DIR__) . '/../../../../../../vendor/twig/twig/lib/Twig/Autoloader.php';
+                                \Twig_Autoloader::register();
+                                return (new TwigView)->setProvider(
+                                    new \Twig_Environment(new \Twig_Loader_Filesystem($response->getPath()))
+                                );
+
+                            }));
+
+                            $assets->set('view', $asset);
+                        }
+                    }
+                }
+            ]);
+        }
     }
 
     /**
